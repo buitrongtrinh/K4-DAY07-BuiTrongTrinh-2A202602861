@@ -1,0 +1,59 @@
+Lệnh chạy:
+  conda run -n lab-vin-env python bench.py --all --strategy heading
+
+Embedding backend: lexical-hashing-4096 (deterministic, không dùng API key)
+
+So sánh chiến lược:
+strategy,chunks,score
+fixed,15,7/10
+sentence,16,9/10
+recursive,17,7/10
+heading,29,9/10
+
+=== Strategy: heading | chunks: 29 ===
+
+Q1: Tôi được mượn tối đa bao nhiêu tài liệu và trong bao lâu?
+filter={'audience': 'student'} | benchmark_score=2/2
+  1. score=0.2985 doc_id=02-undergraduate-borrowing chunk=1
+  2. score=0.2279 doc_id=02-undergraduate-borrowing chunk=2
+  3. score=0.1005 doc_id=02-undergraduate-borrowing chunk=0
+  answer: Sinh viên bậc đại học được mượn tối đa 3 tài liệu trong 2 tuần và được gia hạn 1 lần.
+  A/B không dùng audience filter:
+    1. score=0.3317 doc_id=04-requesting-items audience=all
+    2. score=0.3056 doc_id=03-material-types-and-renewal audience=all
+    3. score=0.3015 doc_id=03-material-types-and-renewal audience=all
+
+Q2: Thời gian gia hạn tài liệu được tính thế nào và cần điều kiện gì?
+filter=None | benchmark_score=2/2
+  1. score=0.5180 doc_id=03-material-types-and-renewal chunk=3
+  2. score=0.4842 doc_id=03-material-types-and-renewal chunk=0
+  3. score=0.3134 doc_id=01-faculty-borrowing chunk=3
+  answer: Bằng một nửa thời hạn mượn ban đầu; tài liệu chưa quá hạn và không có người khác yêu cầu.
+
+Q3: Sách Course Reserve được mượn tối đa bao lâu và bao nhiêu cuốn mỗi lần?
+filter=None | benchmark_score=2/2
+  1. score=0.4331 doc_id=03-material-types-and-renewal chunk=2
+  2. score=0.2075 doc_id=07-student-self-service chunk=0
+  3. score=0.2015 doc_id=07-student-self-service chunk=2
+  answer: 1 cuốn Course Reserve mỗi người mỗi lần trong 2 giờ.
+
+Q4: Tài liệu tôi yêu cầu được thư viện giữ bao lâu trước khi hủy yêu cầu?
+filter=None | benchmark_score=2/2
+  1. score=0.4989 doc_id=04-requesting-items chunk=3
+  2. score=0.4308 doc_id=04-requesting-items chunk=2
+  3. score=0.4063 doc_id=04-requesting-items chunk=1
+  answer: Thư viện giữ tài liệu trong 2 ngày; quá hạn mà không nhận thì yêu cầu bị hủy.
+
+Q5: Có thể đặt phòng chức năng trước bao lâu và đến muộn bao nhiêu phút thì bị hủy?
+filter=None | benchmark_score=1/2
+  1. score=0.4336 doc_id=06-rooms-and-equipment chunk=0
+  2. score=0.2987 doc_id=06-rooms-and-equipment chunk=2
+  3. score=0.2350 doc_id=06-rooms-and-equipment chunk=3
+  answer: Chunk ở hạng 2 nêu đặt trước tối đa 1 tuần; chunk hạng 3 nêu đến muộn quá 10 phút thì bị hủy. Hai ý bị tách nên câu trả lời không hoàn chỉnh ở top-1.
+
+TOTAL: 9/10 | top-3 có chunk chứa đáp án: 5/5
+
+Nhận xét:
+- Filter audience=student biến Q1 từ top-3 không có đáp án thành top-1 đúng đối tượng.
+- Q5 là failure case: heading chunker giữ mục rõ nghĩa nhưng tách hai điều kiện của cùng câu hỏi sang hai section.
+- Điểm số chỉ phản ánh lexical hashing, không đại diện cho semantic embedding production.
